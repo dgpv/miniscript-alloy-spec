@@ -30,7 +30,6 @@
    <type name="K"/>
    <type name="Multi"/>
    <type name="n"/>
-   <type name="Node"/>
    <type name="NWrap"/>
    <type name="o"/>
    <type name="Older"/>
@@ -90,6 +89,10 @@
 <node hideunconnected="yes">
    <type name="TimelockType"/>
    <type name="Witness"/>
+</node>
+
+<node numberatoms="no">
+   <type name="Node"/>
 </node>
 
 <node showlabel="no">

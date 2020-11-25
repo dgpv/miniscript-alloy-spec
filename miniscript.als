@@ -1074,7 +1074,8 @@ check well_formed {
 // can be disabled via conflicting timelock checks in its arguments.
 // Timelocks also cannot be in the ignored nodes, because otherwise
 // the conflict can be avoided and non-canonical satisfaction would not be
-// disabled.
+// disabled. This hipothesis seems to be false, but it could be interesting
+// to look at the counterexamples when we remove some predicates
 check or_b_timelock_conflict_example {
 
     {
