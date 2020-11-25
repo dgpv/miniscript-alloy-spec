@@ -1057,7 +1057,7 @@ run main {
 // can be disabled via conflicting timelock checks in its arguments.
 // But in this case, timelocks cannot be in the ignored nodes, because otherwise
 // the conflict can be avoided and non-canonical satisfaction would not be disabled.
-// Note that we conditions below state that there's no Timelocks in the ignored
+// Note that the conditions below state that there's no Timelocks in the ignored
 // nodes at all, so our search is probably not complete, but isolating timelocks
 // inside ignored nodes would be very complex.
 //
