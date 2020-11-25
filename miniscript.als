@@ -1057,7 +1057,7 @@ run main {
 // can be disabled via conflicting timelock checks in its arguments.
 // But in this case, timelocks cannot be in the ignored nodes, because otherwise
 // the conflict can be avoided and non-canonical satisfaction would not be disabled.
-// Note that the conditions below state that there's no Timelocks in the ignored
+// Note that we conditions below state that there's no Timelocks in the ignored
 // nodes at all, so our search is probably not complete, but isolating timelocks
 // inside ignored nodes would be very complex.
 //
@@ -1067,9 +1067,7 @@ run or_b_timelock_conflict_example {
 
     main_search_predicate
 
-    some Or_b
-
-    all node: Or_b {
+    some node: Or_b {
         some node.args[0].timelocks
         some node.args[1].timelocks
         tl_time in node.args[0].timelocks => tl_height in node.args[1].timelocks
@@ -1077,7 +1075,7 @@ run or_b_timelock_conflict_example {
 	no Timelock & (node.*(args.as_set) & (IgnoredNode + TransitivelyIgnoredNode))
     }
 
-} for 5 but 8 Node, 5 Witness, 6 Int, 4 seq
+} for 5 but 8 Node, 8 Witness, 6 Int, 4 seq
 
 check well_formed {
 
