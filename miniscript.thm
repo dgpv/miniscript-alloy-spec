@@ -1,0 +1,120 @@
+<?xml version="1.0"?>
+<alloy>
+
+<view>
+
+<defaultnode/>
+
+<defaultedge/>
+
+<node>
+   <type name="After"/>
+   <type name="And_b"/>
+   <type name="And_v"/>
+   <type name="Andor"/>
+   <type name="AWrap"/>
+   <type name="B"/>
+   <type name="CorrectPreimage"/>
+   <type name="CWrap"/>
+   <type name="d"/>
+   <type name="DummyWitness"/>
+   <type name="DWrap"/>
+   <type name="e"/>
+   <type name="EmptySig"/>
+   <type name="f"/>
+   <type name="Hash"/>
+   <type name="Hash160"/>
+   <type name="Hash256"/>
+   <type name="Int"/>
+   <type name="JWrap"/>
+   <type name="K"/>
+   <type name="Multi"/>
+   <type name="n"/>
+   <type name="Node"/>
+   <type name="NWrap"/>
+   <type name="o"/>
+   <type name="Older"/>
+   <type name="One"/>
+   <type name="Or_b"/>
+   <type name="Or_c"/>
+   <type name="Or_d"/>
+   <type name="Or_i"/>
+   <type name="Pk"/>
+   <type name="PkH"/>
+   <type name="Preimage"/>
+   <type name="PubKey"/>
+   <type name="Ripemd160"/>
+   <type name="s"/>
+   <type name="Sha256"/>
+   <type name="Sig"/>
+   <type name="String"/>
+   <type name="SWrap"/>
+   <type name="Thresh"/>
+   <type name="Timelock"/>
+   <type name="tl_conflict"/>
+   <type name="tl_height"/>
+   <type name="tl_time"/>
+   <type name="u"/>
+   <type name="univ"/>
+   <type name="V"/>
+   <type name="ValidSig"/>
+   <type name="VWrap"/>
+   <type name="W"/>
+   <type name="WitBool"/>
+   <type name="WitOne"/>
+   <type name="WitZero"/>
+   <type name="Wrapper"/>
+   <type name="WrongPreimage"/>
+   <type name="z"/>
+   <type name="Zero"/>
+   <type name="open$6/Ord"/>
+   <type name="ordering/Ord"/>
+   <type name="seq/Int"/>
+   <set name="this/BasicType" type="TypeDesignator"/>
+   <set name="this/CorrectnessTypeModifier" type="TypeDesignator"/>
+   <set name="this/DSat" type="Node"/>
+   <set name="this/HasSig" type="Node"/>
+   <set name="this/MalleableDSat" type="Node"/>
+   <set name="this/MalleableSat" type="Node"/>
+   <set name="this/NC_DSat" type="Node"/>
+   <set name="this/NC_Sat" type="Node"/>
+   <set name="this/NonmalleabilityTypeModifier" type="TypeDesignator"/>
+   <set name="this/RootNode" type="Node"/>
+   <set name="this/Sat" type="Node"/>
+</node>
+
+<node color="Gray">
+   <set name="this/IgnoredNode" type="Node"/>
+</node>
+
+<node hideunconnected="yes">
+   <type name="TimelockType"/>
+   <type name="Witness"/>
+</node>
+
+<node showlabel="no">
+   <set name="this/CorrectnessHoldsForNode" type="Node"/>
+   <set name="this/NonMalleabilityHoldsForNode" type="Node"/>
+</node>
+
+<node style="Dashed" color="Gray">
+   <set name="this/TransitivelyIgnoredNode" type="Node"/>
+</node>
+
+<node visible="no" hideunconnected="yes">
+   <type name="TypeDesignator"/>
+</node>
+
+<edge visible="no" attribute="yes">
+   <relation name="num_args"> <type name="Multi"/> <type name="Int"/> </relation>
+   <relation name="num_args"> <type name="Thresh"/> <type name="Int"/> </relation>
+   <relation name="required"> <type name="Multi"/> <type name="Int"/> </relation>
+   <relation name="required"> <type name="Thresh"/> <type name="Int"/> </relation>
+   <relation name="timelocks"> <type name="Node"/> <type name="TimelockType"/> </relation>
+   <relation name="type"> <type name="Node"/> <type name="TypeDesignator"/> </relation>
+   <relation name="wit"> <type name="Node"/> <type name="seq/Int"/> <type name="Witness"/> </relation>
+</edge>
+
+</view>
+
+</alloy>
