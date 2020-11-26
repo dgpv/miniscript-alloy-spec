@@ -1061,7 +1061,7 @@ run main {
 // nodes at all, so our search is probably not complete, but isolating timelocks
 // inside ignored nodes would be very complex.
 //
-// This run does not produce any instances with 8 Nodes, but maybe if we run
+// This run does not produce any instances with 9 Nodes, but maybe if we run
 // with more nodes, it can find some ? This will take long time, though.
 run or_b_timelock_conflict_example {
 
@@ -1075,7 +1075,7 @@ run or_b_timelock_conflict_example {
 	no Timelock & (node.*(args.as_set) & (IgnoredNode + TransitivelyIgnoredNode))
     }
 
-} for 5 but 8 Node, 8 Witness, 6 Int, 4 seq
+} for 5 but 9 Node, 8 Witness, 6 Int, 4 seq
 
 check well_formed {
 
