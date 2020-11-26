@@ -1051,32 +1051,6 @@ run main {
     main_search_predicate
 } for 6 but 12 Node, 8 Witness, 6 Int, 4 seq
 
-// An example what of what properties we can explore.
-//
-// Hypothesis: there might be the case where or_b non-canonical satisfaction
-// can be disabled via conflicting timelock checks in its arguments.
-// But in this case, timelocks cannot be in the ignored nodes, because otherwise
-// the conflict can be avoided and non-canonical satisfaction would not be disabled.
-// Note that we conditions below state that there's no Timelocks in the ignored
-// nodes at all, so our search is probably not complete, but isolating timelocks
-// inside ignored nodes would be very complex.
-//
-// This run does not produce any instances with 9 Nodes, but maybe if we run
-// with more nodes, it can find some ? This will take long time, though.
-run or_b_timelock_conflict_example {
-
-    main_search_predicate
-
-    some node: Or_b {
-        some node.args[0].timelocks
-        some node.args[1].timelocks
-        tl_time in node.args[0].timelocks => tl_height in node.args[1].timelocks
-        tl_height in node.args[1].timelocks => tl_time in node.args[0].timelocks
-	no Timelock & (node.*(args.as_set) & (IgnoredNode + TransitivelyIgnoredNode))
-    }
-
-} for 5 but 9 Node, 8 Witness, 6 Int, 4 seq
-
 check well_formed {
 
     basic_types_and_modifiers_correctly_specified
@@ -1093,3 +1067,75 @@ check well_formed {
     // non_malleability_holds_for_all_nodes => ??
 
 } for 5 but 8 Node, 8 Witness, 6 Int, 4 seq
+
+// An example what of what properties we can explore.
+//
+// Hypothesis: there might be the case where or_b non-canonical satisfaction
+// can be disabled via conflicting timelock checks in its arguments.
+// Timelocks also cannot be in the ignored nodes, because otherwise
+// the conflict can be avoided and non-canonical satisfaction would not be
+// disabled.
+check or_b_timelock_conflict_example {
+
+    {
+        reduced_search_space
+
+        correctness_holds_for_all_nodes
+
+        // It seems that enabling this condition is enough to make this check
+        // pass. Without it, the check finds a counterexample with 8 Nodes.
+        // But maybe there is conterexamples with this check and more nodes ?
+        // non_malleability_holds_for_all_nodes
+
+        // We are interested to exmplore only scripts that are satisfied
+        RootNode.sat
+
+        // Without this condition, the counterexample can be found with 8 Nodes
+        // when non_malleability_holds_for_all_nodes condition is not there.
+        // With this condition, no counterexample. Maybe need more nodes ?
+        //RootNode.has_sig
+
+        // We allow malleability from Or_b for this check, and we are exploring
+        // the properties of Or_b specifically, so we need a condition
+        // that states no other node has malleable satisfacion
+        not (Node - Or_b).malleable_sat
+
+        // When this condition is enabled, the check does not find
+        // a counterexample with 8 Nodes even if
+        // non_malleability_holds_for_all_nodes condition not present
+        //all node: Node { can_be_ignored [node] => no node.timelocks }
+    }
+    implies
+    {
+        no node: Or_b {
+            {
+                tl_time in node.args[0].timelocks
+                tl_height in node.args[1].timelocks
+            }
+            or
+            {
+                tl_height in node.args[1].timelocks
+                tl_time in node.args[0].timelocks
+            }
+        }
+    }
+} for 5 but 8 Node, 8 Witness, 6 Int, 4 seq
+
+/*
+pred can_be_ignored [node: Node] {
+    // We explicitly list nodes and args that has the possibility of
+    // being ignored. Note that because this predicate explicitly lists
+    // the nodes and args, it can become incorrect if new nodes with
+    // ignorable args are added. Because of this, this predicate is defined
+    // in Analysis section, close to the check clause that uses it.
+    let ignorable_args = ( Andor.args[1] + Andor.args[2] +
+                           Or_c.args[1] +
+                           Or_d.args[1] +
+                           Or_i.args[0] + Or_i.args[1] +
+                           DWrap.args[0] +
+                           JWrap.args[0] )
+    {
+        node in ignorable_args + ignorable_args.^(args.as_set)
+    }
+}
+*/
