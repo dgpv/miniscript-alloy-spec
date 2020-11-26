@@ -1118,7 +1118,7 @@ check or_b_timelock_conflict_example {
         // be ignored with certain withess configuration.
         // This means that our hypothesis is false, at least with 12 nodes
         // (and the has_sig condition above enabled).
-        // If you enable this condition, you'll see some counterexamples,
+        // If you remove this condition, you'll see some counterexamples,
         // but they would still not match our hypothesis because the timelocks
         // will be ignorable
         all node: Node { can_be_ignored [node] => no node.timelocks }
