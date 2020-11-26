@@ -1082,28 +1082,46 @@ check or_b_timelock_conflict_example {
 
         correctness_holds_for_all_nodes
 
-        // It seems that enabling this condition is enough to make this check
-        // pass. Without it, the check finds a counterexample with 8 Nodes.
-        // But maybe there is conterexamples with this check and more nodes ?
-        // non_malleability_holds_for_all_nodes
-
-        // We are interested to exmplore only scripts that are satisfied
+        // We are interested to explore only scripts that are satisfied
         RootNode.sat
 
-        // Without this condition, the counterexample can be found with 8 Nodes
-        // when non_malleability_holds_for_all_nodes condition is not there.
-        // With this condition, no counterexample. Maybe need more nodes ?
-        //RootNode.has_sig
+        // Explore only instances with RootNode.has_sig,
+        // and still with Or_b with conflicting timelocks.
+        // We can achieve this by having Anv_v as a root node that
+        // has Pk in one of its branches. We will at least 12 Nodes
+        // for the search to find something, but because we fix 4 of them,
+        // the search space is still manageable
+        RootNode.has_sig
+        // Note that this is how a full tree can be specified, when for
+        // example an implementation wants to check their structures against
+        // the spec. The program can produce the check clauses with trees
+        // specified in similar manner and then check them in Alloy
+        RootNode in And_v
+        RootNode.args[0] in VWrap
+        RootNode.args[0].args[0] in CWrap
+        RootNode.args[0].args[0].args[0] in Pk
+        RootNode.args[1] in Or_b
+
+        // It seems that enabling this condition is enough to make this check
+        // pass without counterexamples, with 12 nodes
+        // (and the has_sig condition above enabled). So we will not enable
+        // this condition for our exploration by default, as the 'ignorable'
+        // condition below seems to also be enough for that
+        //non_malleability_holds_for_all_nodes
 
         // We allow malleability from Or_b for this check, and we are exploring
         // the properties of Or_b specifically, so we need a condition
         // that states no other node has malleable satisfacion
         not (Node - Or_b).malleable_sat
 
-        // When this condition is enabled, the check does not find
-        // a counterexample with 8 Nodes even if
-        // non_malleability_holds_for_all_nodes condition not present
-        //all node: Node { can_be_ignored [node] => no node.timelocks }
+        // It seems that there can be no instances where timelocks cannot
+        // be ignored with certain withess configuration.
+        // This means that our hypothesis is false, at least with 12 nodes
+        // (and the has_sig condition above enabled).
+        // If you enable this condition, you'll see some counterexamples,
+        // but they would still not match our hypothesis because the timelocks
+        // will be ignorable
+        all node: Node { can_be_ignored [node] => no node.timelocks }
     }
     implies
     {
@@ -1119,9 +1137,8 @@ check or_b_timelock_conflict_example {
             }
         }
     }
-} for 5 but 8 Node, 8 Witness, 6 Int, 4 seq
+} for 5 but 12 Node, 8 Witness, 6 Int, 4 seq
 
-/*
 pred can_be_ignored [node: Node] {
     // We explicitly list nodes and args that has the possibility of
     // being ignored. Note that because this predicate explicitly lists
@@ -1138,4 +1155,3 @@ pred can_be_ignored [node: Node] {
         node in ignorable_args + ignorable_args.^(args.as_set)
     }
 }
-*/
