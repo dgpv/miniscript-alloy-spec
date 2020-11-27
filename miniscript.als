@@ -78,16 +78,16 @@ sig Pk extends Node {
     correctness_holds
     non_malleability_holds
 
-    xpect  [ sat,  wit[0] in ValidSig ]
-    xpect  [ dsat, wit[0] in EmptySig ]
+    xpect [ sat,  wit[0] in ValidSig ]
+    xpect [ dsat, wit[0] in EmptySig ]
 
-    never  [ nc_sat ]
-    never  [ nc_dsat ]
+    never [ nc_sat ]
+    never [ nc_dsat ]
 
-    never  [ malleable_sat ]
-    never  [ malleable_dsat ]
+    never [ malleable_sat ]
+    never [ malleable_dsat ]
 
-    always [ has_sig ]
+    xpect [ has_sig, wit[0] in AvailSig ]
 
     no timelocks
 }
@@ -106,16 +106,16 @@ sig PkH extends Node {
     correctness_holds
     non_malleability_holds
 
-    xpect  [ sat,  wit[1] in ValidSig ]
-    xpect  [ dsat, wit[1] in EmptySig ]
+    xpect [ sat,  wit[1] in ValidSig ]
+    xpect [ dsat, wit[1] in EmptySig ]
 
-    never  [ nc_sat ]
-    never  [ nc_dsat ]
+    never [ nc_sat ]
+    never [ nc_dsat ]
 
-    never  [ malleable_sat ]
-    never  [ malleable_dsat ]
+    never [ malleable_sat ]
+    never [ malleable_dsat ]
 
-    always [ has_sig ]
+    xpect [ has_sig, wit[0] in AvailSig ]
 
     no timelocks
 }
@@ -226,7 +226,7 @@ sig Andor extends Node {
                             malleable_dsat[Z] or malleable_dsat[X]
         ]
 
-        xpect [ has_sig, has_sig[X] or (has_sig[Y] and has_sig[Z]) ]
+        xpect [ has_sig, dsat[X] => has_sig[Z] else has_sig[X] or has_sig[Y] ]
 
         timelocks = timelocks_combined[X + Y] + timelocks_combined[X + Z]
 
@@ -367,7 +367,12 @@ sig Or_b extends Node {
         always [ malleable_sat ] // overcomplete because of nc_sat
         xpect  [ malleable_dsat, malleable_dsat[Z] or malleable_dsat[X] ]
 
-        xpect [ has_sig, has_sig[Z] and has_sig[X] ]
+        xpect [
+            has_sig, nc_sat =>
+                        (has_sig[Z] or has_sig[X])
+                     else
+                        (dsat[X] => has_sig[Z] else has_sig[X])
+        ]
 
         timelocks = (@timelocks[X] + @timelocks[Z])
 
@@ -411,7 +416,7 @@ sig Or_c extends Node {
         ]
         never [ malleable_dsat ]
 
-        xpect [ has_sig, has_sig[Z] and has_sig[X] ]
+        xpect [ has_sig, dsat[X] => has_sig[Z] else has_sig[X] ]
 
         timelocks = (@timelocks[X] + @timelocks[Z])
 
@@ -458,7 +463,7 @@ sig Or_d extends Node {
         ]
         xpect [ malleable_dsat, malleable_dsat[Z] or malleable_dsat[X] ]
 
-        xpect [ has_sig, has_sig[Z] and has_sig[X] ]
+        xpect [ has_sig, dsat[X] => has_sig[Z] else has_sig[X] ]
 
         timelocks = (@timelocks[X] + @timelocks[Z])
 
@@ -495,16 +500,16 @@ sig Or_i extends Node {
 
         xpect [ non_malleability_holds, s[X] or s[Z] ]
 
-        xpect [sat,  wit[0] in WitZero =>  sat[Z] else  sat[X]]
-        xpect [dsat, wit[0] in WitZero => dsat[Z] else dsat[X]]
+        xpect [ sat,  wit[0] in WitZero =>  sat[Z] else  sat[X] ]
+        xpect [ dsat, wit[0] in WitZero => dsat[Z] else dsat[X] ]
 
-        never [nc_sat]
-        never [nc_dsat]
+        never [ nc_sat ]
+        never [ nc_dsat ]
 
         xpect [ malleable_sat,   malleable_sat[Z] or malleable_sat[X] ]
         xpect [ malleable_dsat, malleable_dsat[Z] or malleable_dsat[X] ]
 
-        xpect [ has_sig, has_sig[Z] and has_sig[X] ]
+        xpect [ has_sig, wit[0] in WitZero => has_sig[Z] else has_sig[X] ]
 
         timelocks = (@timelocks[X] + @timelocks[Z])
 
@@ -567,9 +572,8 @@ sig Thresh extends Node {
     ]
     always [ malleable_dsat ] // overcomplete because of nc_dsat
 
-    // if number has_sig args is greater than (num_args-required),
-    // at least one arg that is required for satisfaction will be has_sig
-    xpect [ has_sig, #{arg: args.elems | has_sig[arg]} > num_args.minus[required] ]
+    // flipping sat/dsat is only possible by flipping an arg that we signed
+    xpect [ has_sig, #(args.elems & HasSig) > num_args.minus[required] ]
 
     timelocks = timelocks_combined[args.elems]
 
@@ -590,12 +594,12 @@ sig Multi extends Node {
 
     #wit = required.plus[1]
     wit.last in DummyWitness
-    all w: wit.butlast.elems | w in Sig
+    all wt: wit.butlast.elems | wt in Sig
 
     type = B + n + d + u + s + e
 
-    let all_empty = (all w: wit.butlast.elems | w in EmptySig),
-        all_valid = (all w: wit.butlast.elems | w in ValidSig)
+    let all_empty = (all wt: wit.butlast.elems | wt in EmptySig),
+        all_valid = (all wt: wit.butlast.elems | wt in ValidSig)
     {
         all_empty or all_valid  // Otherwise fails with ERR_SIG_NULLFAIL
 
@@ -609,7 +613,7 @@ sig Multi extends Node {
     never [ malleable_sat ]
     never [ malleable_dsat ]
 
-    always [ has_sig ]
+    xpect [ has_sig, sat and some wt: wit.butlast.elems | wt in AvailSig ]
 
     no timelocks
 }
@@ -833,7 +837,9 @@ lone sig WitZero extends WitBool {}
 lone sig WitOne extends WitBool {}
 
 abstract sig Sig extends Witness {}
-lone sig ValidSig extends Sig {}
+abstract sig ValidSig extends Sig {}
+lone sig AvailSig extends ValidSig {}
+lone sig UnvailSig extends ValidSig {}
 lone sig EmptySig extends Sig {}
 
 lone sig PubKey extends Witness {}
@@ -872,7 +878,7 @@ fact {
     Witness in RootNode.*(args.as_set).wit.elems
 
     // no duplicate args
-    (sum n: RootNode.*(args.as_set) | #n.args) = #(RootNode.^(args.as_set))
+    (sum node: RootNode.*(args.as_set) | #node.args) = #(RootNode.^(args.as_set))
 }
 
 // more readable access to BasicType
@@ -1037,19 +1043,19 @@ pred main_search_predicate {
     tl_conflict not in timelocks[RootNode]
 
     RootNode.sat
-    RootNode.has_sig
+    s[RootNode]
     not RootNode.malleable_sat
 
 }
 
-// Note that currently there are 8 possible witness instances:
-// one DummyWitness, one PubKey, and two of Sig, Preimage, WitBool.
+// Note that currently there are 9 possible witness instances:
+// one DummyWitness, one PubKey, three of Sig, two of Preimage, WitBool.
 // If more witness types are added, the max witness counts for the
 // run and check clauses should be updated.
 
 run main {
     main_search_predicate
-} for 6 but 12 Node, 8 Witness, 6 Int, 4 seq
+} for 6 but 12 Node, 9 Witness, 6 Int, 4 seq
 
 check well_formed {
 
@@ -1066,7 +1072,7 @@ check well_formed {
     // but it would be nice to have something to check its consistency. 
     // non_malleability_holds_for_all_nodes => ??
 
-} for 5 but 8 Node, 8 Witness, 6 Int, 4 seq
+} for 5 but 8 Node, 9 Witness, 6 Int, 4 seq
 
 // An example what of what properties we can explore.
 //
@@ -1086,13 +1092,14 @@ check or_b_timelock_conflict_example {
         // We are interested to explore only scripts that are satisfied
         RootNode.sat
 
-        // Explore only instances with RootNode.has_sig,
+        // Explore only instances with
+        s[RootNode]
         // and still with Or_b with conflicting timelocks.
         // We can achieve this by having Anv_v as a root node that
         // has Pk in one of its branches. We will at least 12 Nodes
         // for the search to find something, but because we fix 4 of them,
         // the search space is still manageable
-        RootNode.has_sig
+        //
         // Note that this is how a full tree can be specified, when for
         // example an implementation wants to check their structures against
         // the spec. The program can produce the check clauses with trees
@@ -1105,20 +1112,15 @@ check or_b_timelock_conflict_example {
 
         // It seems that enabling this condition is enough to make this check
         // pass without counterexamples, with 12 nodes
-        // (and the has_sig condition above enabled). So we will not enable
+        // (and the s[RootNode] condition above enabled). So we will not enable
         // this condition for our exploration by default, as the 'ignorable'
         // condition below seems to also be enough for that
         //non_malleability_holds_for_all_nodes
 
-        // We allow malleability from Or_b for this check, and we are exploring
-        // the properties of Or_b specifically, so we need a condition
-        // that states no other node has malleable satisfacion
-        not (Node - Or_b).malleable_sat
-
         // It seems that there can be no instances where timelocks cannot
         // be ignored with certain withess configuration.
         // This means that our hypothesis is false, at least with 12 nodes
-        // (and the has_sig condition above enabled).
+        // (and the s[RootNode] condition above enabled).
         // If you remove this condition, you'll see some counterexamples,
         // but they would still not match our hypothesis because the timelocks
         // will be ignorable
@@ -1138,7 +1140,7 @@ check or_b_timelock_conflict_example {
             }
         }
     }
-} for 5 but 12 Node, 8 Witness, 6 Int, 4 seq
+} for 5 but 12 Node, 9 Witness, 6 Int, 4 seq
 
 pred can_be_ignored [node: Node] {
     // We explicitly list nodes and args that has the possibility of

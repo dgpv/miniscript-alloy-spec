@@ -161,10 +161,6 @@ if __name__ == '__main__':
             basic_type = t
 
     nonmal = 'yes' if 'this/MalleableSat' not in root.sets else 'no'
-
-    # Not sure which is correct. C++ miniscript just checks for 's' flag,
-    # but 's' flag can be there without has_sig.
-    # hassig = 'yes' if 'this/HasSig' in root.sets else 'no'
     hassig = 'yes' if 's' in tset else 'no'
 
     if 'f' in tset:
