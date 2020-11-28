@@ -624,7 +624,7 @@ abstract sig Wrapper extends Node {
 
     non_malleability_holds
 
-    xpect [ has_sig, has_sig[args[0]] ]
+    xpect [ has_sig, has_sig[args[0]] and args[0] not in IgnoredNode]
 
     timelocks = @timelocks[args[0]]
 }
