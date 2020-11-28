@@ -226,7 +226,7 @@ sig Andor extends Node {
                             malleable_dsat[Z] or malleable_dsat[X]
         ]
 
-        xpect [ has_sig, dsat[X] => has_sig[Z] else has_sig[X] or has_sig[Y] ]
+        xpect [ has_sig, dsat[X] => has_sig[Z] else (has_sig[X] or has_sig[Y]) ]
 
         timelocks = timelocks_combined[X + Y] + timelocks_combined[X + Z]
 
