@@ -33,9 +33,6 @@ sig Zero extends Node {
     never  [ nc_sat ]
     never  [ nc_dsat ]
 
-    never  [ malleable_sat ]
-    never  [ malleable_dsat ]
-
     no timelocks
 }
 
@@ -54,9 +51,6 @@ sig One extends Node {
 
     never  [ nc_sat ]
     never  [ nc_dsat ]
-
-    never  [ malleable_sat ]
-    never  [ malleable_dsat ]
 
     no timelocks
 }
@@ -79,9 +73,6 @@ sig Pk extends Node {
 
     never [ nc_sat ]
     never [ nc_dsat ]
-
-    never [ malleable_sat ]
-    never [ malleable_dsat ]
 
     no timelocks
 }
@@ -106,9 +97,6 @@ sig PkH extends Node {
     never [ nc_sat ]
     never [ nc_dsat ]
 
-    never [ malleable_sat ]
-    never [ malleable_dsat ]
-
     no timelocks
 }
 
@@ -127,9 +115,6 @@ abstract sig Timelock extends Node {
 
     never  [ nc_sat ]
     never  [ nc_dsat ]
-
-    never  [ malleable_sat ]
-    never  [ malleable_dsat ]
 
     timelocks = tl_height or timelocks = tl_time
 }
@@ -155,9 +140,6 @@ abstract sig Hash extends Node {
 
     never  [ nc_sat ]
     never  [ nc_dsat ]
-
-    never  [ malleable_sat ]
-    always [ malleable_dsat ]
 
     no timelocks
 }
@@ -205,15 +187,6 @@ sig Andor extends Node {
         never [ nc_sat ]
         xpect [ nc_dsat, dsat[Y] and sat[X] ]
 
-        xpect [
-            malleable_sat, malleable_sat[Y] or  malleable_sat[X] or
-                           malleable_sat[Z] or malleable_dsat[X]
-        ]
-        xpect [
-            malleable_dsat, malleable_dsat[Y] or  malleable_sat[X] or
-                            malleable_dsat[Z] or malleable_dsat[X]
-        ]
-
         timelocks = timelocks_combined[X + Y] + timelocks_combined[X + Z]
 
         args.ignored = ( dsat[X] => Y else Z )
@@ -253,9 +226,6 @@ sig And_v extends Node {
 
         never [ nc_sat ]
         xpect [ nc_dsat, dsat[Y] and sat[X] ]
-
-        xpect [ malleable_sat,   malleable_sat[Y] or malleable_sat[X] ]
-        xpect [ malleable_dsat, malleable_dsat[Y] or malleable_sat[X] ]
 
         timelocks = timelocks_combined[X + Y]
 
@@ -301,9 +271,6 @@ sig And_b extends Node {
         xpect [ nc_dsat, ( sat[Y] and dsat[X]) or
                          (dsat[Y] and  sat[X]) ]
 
-        xpect  [ malleable_sat, malleable_sat[Y] or malleable_sat[X] ]
-        always [ malleable_dsat ] // overcomplete because of nc_dsat
-
         timelocks = timelocks_combined[X + Y]
 
         no args.ignored
@@ -346,9 +313,6 @@ sig Or_b extends Node {
         xpect [ nc_sat, sat[Z] and sat[X] ]
         never [ nc_dsat ]
 
-        always [ malleable_sat ] // overcomplete because of nc_sat
-        xpect  [ malleable_dsat, malleable_dsat[Z] or malleable_dsat[X] ]
-
         timelocks = (@timelocks[X] + @timelocks[Z])
 
         no args.ignored
@@ -383,13 +347,6 @@ sig Or_c extends Node {
 
         never [ nc_sat ]
         never [ nc_dsat ]
-
-        xpect [
-            malleable_sat,  malleable_sat[X] or
-                           malleable_dsat[X] or
-                            malleable_sat[Z]
-        ]
-        never [ malleable_dsat ]
 
         timelocks = (@timelocks[X] + @timelocks[Z])
 
@@ -428,13 +385,6 @@ sig Or_d extends Node {
 
         never [ nc_sat ]
         never [ nc_dsat ]
-
-        xpect [
-            malleable_sat,  malleable_sat[X] or
-                           malleable_dsat[X] or
-                            malleable_sat[Z]
-        ]
-        xpect [ malleable_dsat, malleable_dsat[Z] or malleable_dsat[X] ]
 
         timelocks = (@timelocks[X] + @timelocks[Z])
 
@@ -476,9 +426,6 @@ sig Or_i extends Node {
 
         never [ nc_sat ]
         never [ nc_dsat ]
-
-        xpect [ malleable_sat,   malleable_sat[Z] or malleable_sat[X] ]
-        xpect [ malleable_dsat, malleable_dsat[Z] or malleable_dsat[X] ]
 
         timelocks = (@timelocks[X] + @timelocks[Z])
 
@@ -535,12 +482,6 @@ sig Thresh extends Node {
         xpect [ nc_dsat, num_sats != required and num_dsats != num_args ]
     }
 
-    xpect [ // any individual arg can be satisfied or dissatisfied
-        malleable_sat, some {arg: args.elems |  malleable_sat[arg] or
-                                               malleable_dsat[arg] }
-    ]
-    always [ malleable_dsat ] // overcomplete because of nc_dsat
-
     timelocks = timelocks_combined[args.elems]
 
     no args.ignored
@@ -576,9 +517,6 @@ sig Multi extends Node {
         never [ nc_dsat ]
     }
 
-    never [ malleable_sat ]
-    never [ malleable_dsat ]
-
     no timelocks
 }
 
@@ -611,9 +549,6 @@ sig AWrap extends Wrapper {
         never [ nc_sat ]
         never [ nc_dsat ]
 
-        xpect [ malleable_sat,   malleable_sat[X] ]
-        xpect [ malleable_dsat, malleable_dsat[X] ]
-
         no args.ignored
     }
 }
@@ -637,9 +572,6 @@ sig SWrap extends Wrapper {
 
         never [ nc_sat ]
         never [ nc_dsat ]
-
-        xpect [ malleable_sat,   malleable_sat[X] ]
-        xpect [ malleable_dsat, malleable_dsat[X] ]
 
         no args.ignored
     }
@@ -666,9 +598,6 @@ sig CWrap extends Wrapper {
         never [ nc_sat ]
         never [ nc_dsat ]
 
-        xpect [ malleable_sat,   malleable_sat[X] ]
-        xpect [ malleable_dsat, malleable_dsat[X] ]
-
         no args.ignored
     }
 }
@@ -693,9 +622,6 @@ sig DWrap extends Wrapper {
         never [ nc_sat ]
         never [ nc_dsat ]
 
-        xpect [ malleable_sat,   malleable_sat[X] ]
-        xpect [ malleable_dsat, malleable_dsat[X] ]
-
         args.ignored = maybe [ X, wit[0] in WitZero ]
     }
 }
@@ -719,9 +645,6 @@ sig VWrap extends Wrapper {
 
         never  [ nc_sat ]
         never  [ nc_dsat ]
-
-        xpect [ malleable_sat, malleable_sat[X] ]
-        never [ malleable_dsat ]
 
         no args.ignored
     }
@@ -749,9 +672,6 @@ sig JWrap extends Wrapper {
         never [ nc_sat ]
         xpect [ nc_dsat, #wit = 0 and dsat[X] ]
 
-        xpect [ malleable_sat,   malleable_sat[X] ]
-        xpect [ malleable_dsat, malleable_dsat[X] ]
-
         args.ignored = maybe [ X, #wit > 0 ]
     }
 }
@@ -778,9 +698,6 @@ sig NWrap extends Wrapper {
 
         never [ nc_sat ]
         never [ nc_dsat ]
-
-        xpect [ malleable_sat,   malleable_sat[X] ]
-        xpect [ malleable_dsat, malleable_dsat[X] ]
 
         no args.ignored
     }
@@ -910,12 +827,6 @@ pred nc_sat  [node: Node] { node in NC_Sat }
 pred dsat    [node: Node] { node in DSat }
 pred nc_dsat [node: Node] { node in NC_DSat }
 
-sig MalleableSat in Node {} // malleablly satisfied nodes
-sig MalleableDSat in Node {} // malleablly dissatisfied nodes
-
-pred malleable_sat  [node: Node] { node in MalleableSat }
-pred malleable_dsat [node: Node] { node in MalleableDSat }
-
 enum TimelockType { tl_height, tl_time, tl_conflict }
 
 // Nodes for which combination of height and time locks is forbidden
@@ -939,13 +850,13 @@ fact { TransitivelyIgnoredNode = IgnoredNode.^(args.as_set) }
 // Predicates to help define correctness and non-malleability properties
 
 sig CorrectnessHoldsForNode in Node {}
-sig NonMalleabilityHoldsForNode in Node {}
+sig NonMalleable in Node {}
 
 pred correctness_holds [node: Node] { node in CorrectnessHoldsForNode }
-pred non_malleability_holds [node: Node] { node in NonMalleabilityHoldsForNode }
+pred non_malleability_holds [node: Node] { node in NonMalleable }
 
 pred correctness_holds_for_all_nodes { Node = CorrectnessHoldsForNode }
-pred non_malleability_holds_for_all_nodes { Node = NonMalleabilityHoldsForNode }
+pred non_malleability_holds_for_all_nodes { Node = NonMalleable }
 
 /********************/
 /* Analysis section */
@@ -1002,7 +913,6 @@ pred main_search_predicate {
 
     RootNode.sat
     s[RootNode]
-    not RootNode.malleable_sat
 
 }
 

@@ -72,12 +72,10 @@
    <set name="this/BasicType" type="TypeDesignator"/>
    <set name="this/CorrectnessTypeModifier" type="TypeDesignator"/>
    <set name="this/DSat" type="Node"/>
-   <set name="this/HasSig" type="Node"/>
-   <set name="this/MalleableDSat" type="Node"/>
-   <set name="this/MalleableSat" type="Node"/>
    <set name="this/NC_DSat" type="Node"/>
    <set name="this/NC_Sat" type="Node"/>
    <set name="this/NonmalleabilityTypeModifier" type="TypeDesignator"/>
+   <set name="this/NonMalleable" type="Node"/>
    <set name="this/RootNode" type="Node"/>
    <set name="this/Sat" type="Node"/>
 </node>
@@ -97,7 +95,6 @@
 
 <node showlabel="no">
    <set name="this/CorrectnessHoldsForNode" type="Node"/>
-   <set name="this/NonMalleabilityHoldsForNode" type="Node"/>
 </node>
 
 <node style="Dashed" color="Gray">

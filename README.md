@@ -18,14 +18,9 @@ The model is the tree of nodes, each node corresponds to the Miniscript fragment
 
 The nodes are combined according to the rules that govern correctness and non-malleability properties.
 
-Malleability is tracked across the node tree so that a predicate on the node can state if the
-script rooted at the node can have malleable witness or not
-
 Timelocks are tracked across the node tree so that a predicate on the node can state if there is a conflict between blockheight- and blocktime-based timelocks
 
 Witnesses `Sig`, `Preimage` and `WitBool` can have 'valid' and 'invalid' values, and the model instance can be analysed to understand what witnesses will be required for the particular spend of the script.
-
-The timelock and malleability properties of the model instance will not depend on the witness configuration
 
 Witness configuration can result in some nodes being excluded from the execution (like in `Or_i`, only one branch will be executed depending on the WitBool in the witness). Nodes that are excluded from the execution with particular witness configuration will be in the `IgnoredNode` (directly ignored) and `TransitivelyIgnoredNode` (descendant of ignored) sets. The `miniscript.thm` theme uses gray color for ignored nodes.
 
@@ -54,6 +49,12 @@ The Alloy analyzer is for bounded model checking, so the size of the checked mod
 The visualisation of the model instances is excellent in Alloy. The spec can be easily changed and many properties to check against the model can be devised. This makes the spec a good tool to explore the properties of Miniscript
 
 ## Limitations
+
+#### Satisfaction algorithm is not modelled
+
+It might be possible to model the satisfaction algorithm, but currently only the type system is modelled,
+that can enforce the static properties of the script. With model of satisfaction algorithm, it will be possible
+to check some properties of the runtime behavior of the signer.
 
 #### Resource limits are not modelled
 

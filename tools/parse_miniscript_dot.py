@@ -180,7 +180,11 @@ if __name__ == '__main__':
             assert not basic_type
             basic_type = t
 
-    nonmal = 'yes' if 'this/MalleableSat' not in root.sets else 'no'
+    if 'this/NonMalleable' in root.sets:
+        nonmal = 'yes'
+    else:
+        nonmal = 'no'
+
     hassig = 'yes' if 's' in tset else 'no'
 
     if 'f' in tset:
