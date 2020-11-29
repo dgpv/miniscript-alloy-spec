@@ -36,8 +36,6 @@ sig Zero extends Node {
     never  [ malleable_sat ]
     never  [ malleable_dsat ]
 
-    never  [ has_sig ]
-
     no timelocks
 }
 
@@ -59,8 +57,6 @@ sig One extends Node {
 
     never  [ malleable_sat ]
     never  [ malleable_dsat ]
-
-    never  [ has_sig ]
 
     no timelocks
 }
@@ -86,8 +82,6 @@ sig Pk extends Node {
 
     never [ malleable_sat ]
     never [ malleable_dsat ]
-
-    xpect [ has_sig, wit[0] in AvailSig ]
 
     no timelocks
 }
@@ -115,8 +109,6 @@ sig PkH extends Node {
     never [ malleable_sat ]
     never [ malleable_dsat ]
 
-    xpect [ has_sig, wit[0] in AvailSig ]
-
     no timelocks
 }
 
@@ -138,8 +130,6 @@ abstract sig Timelock extends Node {
 
     never  [ malleable_sat ]
     never  [ malleable_dsat ]
-
-    never  [ has_sig ]
 
     timelocks = tl_height or timelocks = tl_time
 }
@@ -168,8 +158,6 @@ abstract sig Hash extends Node {
 
     never  [ malleable_sat ]
     always [ malleable_dsat ]
-
-    never  [ has_sig ]
 
     no timelocks
 }
@@ -226,8 +214,6 @@ sig Andor extends Node {
                             malleable_dsat[Z] or malleable_dsat[X]
         ]
 
-        xpect [ has_sig, dsat[X] => has_sig[Z] else (has_sig[X] or has_sig[Y]) ]
-
         timelocks = timelocks_combined[X + Y] + timelocks_combined[X + Z]
 
         args.ignored = ( dsat[X] => Y else Z )
@@ -270,8 +256,6 @@ sig And_v extends Node {
 
         xpect [ malleable_sat,   malleable_sat[Y] or malleable_sat[X] ]
         xpect [ malleable_dsat, malleable_dsat[Y] or malleable_sat[X] ]
-
-        xpect [ has_sig, has_sig[Y] or has_sig[X] ]
 
         timelocks = timelocks_combined[X + Y]
 
@@ -320,8 +304,6 @@ sig And_b extends Node {
         xpect  [ malleable_sat, malleable_sat[Y] or malleable_sat[X] ]
         always [ malleable_dsat ] // overcomplete because of nc_dsat
 
-        xpect [ has_sig, has_sig[Y] or has_sig[X] ]
-
         timelocks = timelocks_combined[X + Y]
 
         no args.ignored
@@ -367,13 +349,6 @@ sig Or_b extends Node {
         always [ malleable_sat ] // overcomplete because of nc_sat
         xpect  [ malleable_dsat, malleable_dsat[Z] or malleable_dsat[X] ]
 
-        xpect [
-            has_sig, nc_sat =>
-                        (has_sig[Z] or has_sig[X])
-                     else
-                        (dsat[X] => has_sig[Z] else has_sig[X])
-        ]
-
         timelocks = (@timelocks[X] + @timelocks[Z])
 
         no args.ignored
@@ -415,8 +390,6 @@ sig Or_c extends Node {
                             malleable_sat[Z]
         ]
         never [ malleable_dsat ]
-
-        xpect [ has_sig, dsat[X] => has_sig[Z] else has_sig[X] ]
 
         timelocks = (@timelocks[X] + @timelocks[Z])
 
@@ -463,8 +436,6 @@ sig Or_d extends Node {
         ]
         xpect [ malleable_dsat, malleable_dsat[Z] or malleable_dsat[X] ]
 
-        xpect [ has_sig, dsat[X] => has_sig[Z] else has_sig[X] ]
-
         timelocks = (@timelocks[X] + @timelocks[Z])
 
         args.ignored = maybe [ Z, sat[X] ]
@@ -508,8 +479,6 @@ sig Or_i extends Node {
 
         xpect [ malleable_sat,   malleable_sat[Z] or malleable_sat[X] ]
         xpect [ malleable_dsat, malleable_dsat[Z] or malleable_dsat[X] ]
-
-        xpect [ has_sig, wit[0] in WitZero => has_sig[Z] else has_sig[X] ]
 
         timelocks = (@timelocks[X] + @timelocks[Z])
 
@@ -572,9 +541,6 @@ sig Thresh extends Node {
     ]
     always [ malleable_dsat ] // overcomplete because of nc_dsat
 
-    // flipping sat/dsat is only possible by flipping an arg that we signed
-    xpect [ has_sig, #(args.elems & HasSig) > num_args.minus[required] ]
-
     timelocks = timelocks_combined[args.elems]
 
     no args.ignored
@@ -613,8 +579,6 @@ sig Multi extends Node {
     never [ malleable_sat ]
     never [ malleable_dsat ]
 
-    xpect [ has_sig, sat and some wt: wit.butlast.elems | wt in AvailSig ]
-
     no timelocks
 }
 
@@ -623,8 +587,6 @@ abstract sig Wrapper extends Node {
     #args = 1
 
     non_malleability_holds
-
-    xpect [ has_sig, has_sig[args[0]] and args[0] not in IgnoredNode]
 
     timelocks = @timelocks[args[0]]
 }
@@ -837,9 +799,7 @@ lone sig WitZero extends WitBool {}
 lone sig WitOne extends WitBool {}
 
 abstract sig Sig extends Witness {}
-abstract sig ValidSig extends Sig {}
-lone sig AvailSig extends ValidSig {}
-lone sig UnvailSig extends ValidSig {}
+lone sig ValidSig extends Sig {}
 lone sig EmptySig extends Sig {}
 
 lone sig PubKey extends Witness {}
@@ -952,11 +912,9 @@ pred nc_dsat [node: Node] { node in NC_DSat }
 
 sig MalleableSat in Node {} // malleablly satisfied nodes
 sig MalleableDSat in Node {} // malleablly dissatisfied nodes
-sig HasSig in Node {} // nodes with HASSIG flag
 
 pred malleable_sat  [node: Node] { node in MalleableSat }
 pred malleable_dsat [node: Node] { node in MalleableDSat }
-pred has_sig        [node: Node] { node in HasSig }
 
 enum TimelockType { tl_height, tl_time, tl_conflict }
 
@@ -1048,14 +1006,14 @@ pred main_search_predicate {
 
 }
 
-// Note that currently there are 9 possible witness instances:
-// one DummyWitness, one PubKey, three of Sig, two of Preimage, WitBool.
+// Note that currently there are 8 possible witness instances:
+// one DummyWitness, one PubKey, two of Sig, two of Preimage, WitBool.
 // If more witness types are added, the max witness counts for the
 // run and check clauses should be updated.
 
 run main {
     main_search_predicate
-} for 6 but 12 Node, 9 Witness, 6 Int, 4 seq
+} for 6 but 12 Node, 8 Witness, 6 Int, 4 seq
 
 check well_formed {
 
@@ -1072,7 +1030,7 @@ check well_formed {
     // but it would be nice to have something to check its consistency. 
     // non_malleability_holds_for_all_nodes => ??
 
-} for 5 but 8 Node, 9 Witness, 6 Int, 4 seq
+} for 5 but 8 Node, 8 Witness, 6 Int, 4 seq
 
 // An example what of what properties we can explore.
 //
@@ -1140,7 +1098,7 @@ check or_b_timelock_conflict_example {
             }
         }
     }
-} for 5 but 12 Node, 9 Witness, 6 Int, 4 seq
+} for 5 but 12 Node, 8 Witness, 6 Int, 4 seq
 
 pred can_be_ignored [node: Node] {
     // We explicitly list nodes and args that has the possibility of
