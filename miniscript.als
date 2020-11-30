@@ -944,12 +944,27 @@ pred sat_s_dsat_f_always_have_valid_sig {
     }
 }
 
+pred z_o_n_modifiers_correctly_specified {
+    correctness_holds_for_all_nodes => {
+        all node: Node - IgnoredNode - TransitivelyIgnoredNode {
+            let non_ignored_descendants =
+                node.*(args.as_set) - IgnoredNode - TransitivelyIgnoredNode
+            {
+                z[node] => #non_ignored_descendants.wit = 0
+                o[node] => #non_ignored_descendants.wit = 1
+                n[node] => #non_ignored_descendants.wit >= 1
+            }
+        }
+    }
+}
+
 check well_formed {
     basic_types_and_modifiers_correctly_specified
     NC_Sat in Sat // nc_sat implies sat
     NC_DSat in DSat // nc_dsat implies dsat
     sat_iff_dsat
     sat_s_dsat_f_always_have_valid_sig
+    z_o_n_modifiers_correctly_specified
 } for 5 but 8 Node, 8 Witness, 6 Int, 4 seq
 
 // An example what of what properties we can explore.
