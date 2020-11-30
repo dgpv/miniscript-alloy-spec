@@ -944,6 +944,10 @@ pred sat_s_dsat_f_always_have_valid_sig {
     }
 }
 
+// Note that "all conditional dissatisfactions (if any) to require a signature"
+// for the "e" type modifier is a hyperproperty, and we cannot model it easily,
+// while "requires a unique unconditional dissatisfaction to exist" can be
+// simply expressed as "e implies d"
 pred e_implies_d {
     {
         correctness_holds_for_all_nodes
