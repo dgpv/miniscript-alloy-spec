@@ -50,11 +50,12 @@ The visualisation of the model instances is excellent in Alloy. The spec can be 
 
 ## Limitations
 
-#### Satisfaction algorithm is not modelled
+#### Non-malleable satisfaction algorithm is not modelled
 
-It might be possible to model the satisfaction algorithm, but currently only the type system is modelled,
-that can enforce the static properties of the script. With model of satisfaction algorithm, it will be possible
-to check some properties of the runtime behavior of the signer.
+It might be possible to model the non-malleable satisfaction algorithm, but currently only the type system
+that can enforce the static properties of the script, and just satisfactions/dissatisfactions is modelled,
+without detection if particulare sat/dsat is malleable. With model of non-malleable satisfaction algorithm,
+it will be possible to check more properties of the runtime behavior of the signer.
 
 #### Resource limits are not modelled
 
