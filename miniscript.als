@@ -944,6 +944,16 @@ pred sat_s_dsat_f_always_have_valid_sig {
     }
 }
 
+pred e_implies_d {
+    {
+        correctness_holds_for_all_nodes
+        non_malleability_holds_for_all_nodes
+    }
+    implies {
+        all node: Node | e[node] => d[node]
+    }
+}
+
 pred z_o_n_modifiers_correctly_specified {
     correctness_holds_for_all_nodes => {
         all node: Node - IgnoredNode - TransitivelyIgnoredNode {
@@ -964,6 +974,7 @@ check well_formed {
     NC_DSat in DSat // nc_dsat implies dsat
     sat_iff_dsat
     sat_s_dsat_f_always_have_valid_sig
+    e_implies_d
     z_o_n_modifiers_correctly_specified
 } for 5 but 8 Node, 8 Witness, 6 Int, 4 seq
 
