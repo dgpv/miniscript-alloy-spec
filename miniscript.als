@@ -165,7 +165,7 @@ sig Andor extends Node {
                + maybe [ d,  d[Z] ]
                + maybe [ s,  s[Z] and (s[X] or s[Y]) ]
                + maybe [ f,  f[Z] and (s[X] or f[Y]) ]
-               + maybe [ f,  e[Z] and (s[X] or f[Y]) ]
+               + maybe [ e,  e[Z] and (s[X] or f[Y]) ]
 
         xpect [
             correctness_holds,
@@ -640,6 +640,8 @@ sig VWrap extends Wrapper {
                  + maybe [ s, s[X] ]
                  + just  [ f ]
 
+        always [ sat[X] ] // VERIFY will be applied
+
         always [ sat ]
         never  [ dsat ]
 
@@ -849,14 +851,14 @@ fact { TransitivelyIgnoredNode = IgnoredNode.^(args.as_set) }
 
 // Predicates to help define correctness and non-malleability properties
 
-sig CorrectnessHoldsForNode in Node {}
-sig NonMalleable in Node {}
+sig CorrectnessHolds in Node {}
+sig NonMalleableHolds in Node {}
 
-pred correctness_holds [node: Node] { node in CorrectnessHoldsForNode }
-pred non_malleability_holds [node: Node] { node in NonMalleable }
+pred correctness_holds [node: Node] { node in CorrectnessHolds }
+pred non_malleability_holds [node: Node] { node in NonMalleableHolds }
 
-pred correctness_holds_for_all_nodes { Node = CorrectnessHoldsForNode }
-pred non_malleability_holds_for_all_nodes { Node = NonMalleable }
+pred correctness_holds_for_all_nodes { Node = CorrectnessHolds }
+pred non_malleability_holds_for_all_nodes { Node = NonMalleableHolds }
 
 /********************/
 /* Analysis section */
@@ -925,21 +927,29 @@ run main {
     main_search_predicate
 } for 6 but 12 Node, 8 Witness, 6 Int, 4 seq
 
-check well_formed {
-
-    basic_types_and_modifiers_correctly_specified
-
-    NC_Sat in Sat // nc_sat implies sat
-    NC_DSat in DSat // nc_dsat implies dsat
-
+pred sat_iff_dsat {
     correctness_holds_for_all_nodes => {
         Node = Sat + DSat and no Sat & DSat // sat iff dsat
     }
+}
 
-    // Don't know what property could follow from this,
-    // but it would be nice to have something to check its consistency. 
-    // non_malleability_holds_for_all_nodes => ??
+pred sat_s_dsat_f_always_have_valid_sig {
+    {
+        correctness_holds_for_all_nodes
+        non_malleability_holds_for_all_nodes
+    }
+    implies {
+        all node: Sat  | s[node] => ValidSig in node.*(args.as_set).wit.elems
+        all node: DSat | f[node] => ValidSig in node.*(args.as_set).wit.elems
+    }
+}
 
+check well_formed {
+    basic_types_and_modifiers_correctly_specified
+    NC_Sat in Sat // nc_sat implies sat
+    NC_DSat in DSat // nc_dsat implies dsat
+    sat_iff_dsat
+    sat_s_dsat_f_always_have_valid_sig
 } for 5 but 8 Node, 8 Witness, 6 Int, 4 seq
 
 // An example what of what properties we can explore.
