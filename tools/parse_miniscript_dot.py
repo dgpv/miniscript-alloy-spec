@@ -120,7 +120,7 @@ def to_miniscript(node: Node, next_key_name: Callable[[], str]) -> str:
     if name in ('Sha256', 'Hash256', 'Ripemd160', 'Hash160'):
         return f'{name.lower()}(H)'
 
-    if name in ('Pk', 'PkH'):
+    if name in ('Pk_k', 'Pk_h'):
         return f'{name.lower()}({next_key_name()})'
 
     if name == 'Zero':

@@ -38,8 +38,8 @@
    <type name="Or_c"/>
    <type name="Or_d"/>
    <type name="Or_i"/>
-   <type name="Pk"/>
-   <type name="PkH"/>
+   <type name="Pk_k"/>
+   <type name="Pk_h"/>
    <type name="Preimage"/>
    <type name="PubKey"/>
    <type name="Ripemd160"/>

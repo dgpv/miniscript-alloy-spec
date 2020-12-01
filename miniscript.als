@@ -55,7 +55,7 @@ sig One extends Node {
     no timelocks
 }
 
-sig Pk extends Node {
+sig Pk_k extends Node {
 } {
     type = K + o + n + d + u + s + e
 
@@ -77,7 +77,7 @@ sig Pk extends Node {
     no timelocks
 }
 
-sig PkH extends Node {
+sig Pk_h extends Node {
 } {
     type = K + n + u + d + s + e
 
@@ -1004,7 +1004,7 @@ check or_b_timelock_conflict_example {
         s[RootNode]
         // and still with Or_b with conflicting timelocks.
         // We can achieve this by having Anv_v as a root node that
-        // has Pk in one of its branches. We will at least 12 Nodes
+        // has Pk_k in one of its branches. We will at least 12 Nodes
         // for the search to find something, but because we fix 4 of them,
         // the search space is still manageable
         //
@@ -1015,7 +1015,7 @@ check or_b_timelock_conflict_example {
         RootNode in And_v
         RootNode.args[0] in VWrap
         RootNode.args[0].args[0] in CWrap
-        RootNode.args[0].args[0].args[0] in Pk
+        RootNode.args[0].args[0].args[0] in Pk_k
         RootNode.args[1] in Or_b
 
         // It seems that enabling this condition is enough to make this check
