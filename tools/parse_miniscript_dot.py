@@ -180,7 +180,7 @@ if __name__ == '__main__':
             assert not basic_type
             basic_type = t
 
-    if 'this/NonMalleable' in root.sets:
+    if 'this/NonMalleableHolds' in root.sets:
         nonmal = 'yes'
     else:
         nonmal = 'no'
