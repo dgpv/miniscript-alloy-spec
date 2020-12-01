@@ -590,6 +590,7 @@ sig CWrap extends Wrapper {
                  + maybe [ d, d[X] ]
                  + just  [ u ]
                  + just  [ s ]
+                 + maybe [ f, f[X] ]
                  + maybe [ e, e[X] ]
 
         xpect [ sat,   sat[X] ]
