@@ -894,6 +894,8 @@ pred identical_fragments_disabled {
     no Hash256
     no Ripemd160
     no Hash160
+    // Only After
+    no Older
 }
 
 pred reduced_search_space {
