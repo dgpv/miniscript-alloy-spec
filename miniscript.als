@@ -877,6 +877,7 @@ pred zero_is_only_used_by_Andor_and_Or_i {
     no (Zero & RootNode)
     no (Zero & (Node - Andor - Or_i).args.elems)
     no (Zero & Andor.args.butlast.elems)
+    all node: Or_i | node.args[0] in Zero <=> node.args[1] not in Zero
 }
 
 pred no_useless_one_or_zero {
