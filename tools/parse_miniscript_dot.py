@@ -24,7 +24,9 @@ import re
 import sys
 import pygraphviz as pgv
 
-from typing import Set, Dict, Iterable, Tuple, Callable, Union, List
+from typing import (
+    Set, Dict, Iterable, Tuple, Callable, Union, List, Any, Generator
+)
 
 AttrType = Union[Set[str], List[str], str]
 
@@ -40,6 +42,19 @@ class Node:
     def __repr__(self) -> str:
         return (f'{self.__class__.__name__}({repr(self.name)}, {self.sets}, '
                 f'{self.attrs}, args={self.args})')
+
+
+def flatten_op_list(lst: List[Any]) -> Generator[Any, None, None]:
+    for item in lst:
+        if isinstance(item, list):
+            for subitem in flatten_op_list(item):
+                yield subitem
+        else:
+            if isinstance(item, str) and not item.isdigit() \
+                    and not item.startswith('<'):
+                yield f'OP_{item}'
+            else:
+                yield f'{item}'
 
 
 def from_label(gvnode: pgv.Node) -> Tuple[str, Set[str], Dict[str, AttrType]]:
@@ -99,45 +114,126 @@ def process_nodes(g: pgv.AGraph) -> Node:
     return walk(root_node)
 
 
-def to_miniscript(node: Node, next_key_name: Callable[[], str]) -> str:
+# mypy does not support recursive types yet, have to use List[Any]
+ScriptTree = List[Union[str, int, List[Any]]]
+
+
+def add_verify(X: ScriptTree) -> None:
+    last_op = X[-1]
+
+    if not isinstance(last_op, str):
+        if isinstance(last_op, int):
+            X.append('VERIFY')
+        else:
+            add_verify(last_op)
+        return
+
+    if last_op in ('CHECKLOCKTIMEVERIFY', 'CHECKSEQUENCEVERIFY'):
+        X.append('VERIFY')  # pointles, but allowed
+        return
+
+    if last_op.endswith('VERIFY'):
+        return
+
+    if last_op in ('EQUAL', 'NUMEQUAL', 'CHECKSIG', 'CHECKMULTISIG'):
+        X[-1] = last_op + 'VERIFY'
+        return
+
+    X.append('VERIFY')
+
+
+def wrapper_to_script(node: Node, X: ScriptTree) -> ScriptTree:
+    name = node.name
+
+    assert name.endswith('Wrap')
+
+    if name.startswith('A'):
+        return ['TOALTSTACK', X, 'FROMALTSTACK']
+
+    if name.startswith('S'):
+        return ['SWAP', X]
+
+    if name.startswith('C'):
+        return [X, 'CHECKSIG']
+
+    if name.startswith('D'):
+        return ['DUP', 'IF', X, 'ENDIF']
+
+    if name.startswith('V'):
+        add_verify(X)
+        return X
+
+    if name.startswith('J'):
+        return ['SIZE', '0NOTEQUAL', 'IF', X, 'ENDIF']
+
+    if name.startswith('N'):
+        return [X, '0NOTEQUAL']
+
+    assert False, f'unknown wrapper {name}'
+
+
+def to_miniscript(node: Node, next_key_name: Callable[[], str]
+                  ) -> Tuple[str, ScriptTree]:
 
     name = node.name
 
     if name.endswith('Wrap'):
         sep = '' if node.args[0].name.endswith('Wrap') else ':'
-        return (f'{name[:1].lower()}{sep}'
-                f'{to_miniscript(node.args[0], next_key_name)}')
+        ms, scr = to_miniscript(node.args[0], next_key_name)
+        return ((f'{name[:1].lower()}{sep}{ms}'),
+                wrapper_to_script(node, scr))
 
     if name in ('After', 'Older'):
         if 'tl_height' in node.attrs['timelocks']:
-            arg = 5*(10**8)+1
+            arg_ms = '500000001'
+            arg_scr = '<0165cd1d>'
         else:
             assert 'tl_time' in node.attrs['timelocks']
-            arg = 1
+            arg_ms = arg_scr = '1'
 
-        return f'{name.lower()}({arg})'
+        ltype = 'SEQUENCE' if name == 'Older' else 'LOCKTIME'
+
+        return (f'{name.lower()}({arg_ms})',
+                [arg_scr, f'CHECK{ltype}VERIFY'])
 
     if name in ('Sha256', 'Hash256', 'Ripemd160', 'Hash160'):
-        return f'{name.lower()}(H)'
+        return (f'{name.lower()}(H)',
+                ['SIZE', '<20>', 'EQUALVERIFY', name.upper(), '<H>', 'EQUAL'])
 
-    if name in ('Pk_k', 'Pk_h'):
-        return f'{name.lower()}({next_key_name()})'
+    if name == 'Pk_k':
+        kname = next_key_name()
+        return (f'{name.lower()}({kname})',
+                [f'<{kname}>'])
+
+    if name == 'Pk_h':
+        kname = next_key_name()
+        return (f'{name.lower()}({kname})',
+                ['DUP', 'HASH160', f'<HASH160({kname})>', 'EQUALVERIFY'])
 
     if name == 'Zero':
-        return '0'
+        return '0', [0]
 
     if name == 'One':
-        return '1'
+        return '1', [1]
+
+    ops: ScriptTree
 
     if name == 'Multi':
         assert isinstance(node.attrs['num_args'], str)
         assert isinstance(node.attrs['required'], str)
         num_args = int(node.attrs['num_args'])
         required = int(node.attrs['required'])
-        return (f'{name.lower()}({required},'
-                f'{",".join(next_key_name() for _ in range(num_args))})')
+        knames = [next_key_name() for _ in range(num_args)]
+        ops = [required]
+        ops.extend([f'<{kn}>' for kn in knames])
+        ops.append(num_args)
+        ops.append('CHECKMULTISIG')
+        return (f'{name.lower()}({required},{",".join(knames)})', ops)
 
     next_args = [to_miniscript(arg, next_key_name) for arg in node.args]
+
+    next_ms = [arg[0] for arg in next_args]
+    next_ops = [arg[1] for arg in next_args]
 
     if name == 'Thresh':
         assert isinstance(node.attrs['num_args'], str)
@@ -145,9 +241,43 @@ def to_miniscript(node: Node, next_key_name: Callable[[], str]) -> str:
         num_args = int(node.attrs['num_args'])
         assert num_args == len(next_args)
         required = int(node.attrs['required'])
-        return (f'{name.lower()}({required},{",".join(next_args)})')
 
-    return (f'{name.lower()}({",".join(next_args)})')
+        ops = [next_ops[0]]
+        for op in next_ops[1:]:
+            ops.append(op)
+            ops.append('ADD')
+
+        ops.append(required)
+        ops.append('EQUAL')
+
+        return (f'{name.lower()}({required},{",".join(next_ms)})', ops)
+
+    if name == 'Andor':
+        X, Y, Z = next_ops
+        ops = [X, 'NOTIF', Z, 'ELSE', Y, 'ENDIF']
+    elif name == 'And_v':
+        X, Y = next_ops
+        ops = [X, Y]
+    elif name == 'And_b':
+        X, Y = next_ops
+        ops = [X, Y, 'BOOLAND']
+    elif name == 'Or_b':
+        X, Z = next_ops
+        ops = [X, Z, 'BOOLOR']
+    elif name == 'Or_c':
+        X, Z = next_ops
+        ops = [X, 'NOTIF', Z, 'ENDIF']
+    elif name == 'Or_d':
+        X, Z = next_ops
+        ops = [X, 'IFDUP', 'NOTIF', Z, 'ENDIF']
+    elif name == 'Or_i':
+        X, Z = next_ops
+        ops = ['IF', X, 'ELSE', Z, 'ENDIF']
+    else:
+        assert False, f'unhandled miniscript fragment {name}'
+
+    return (f'{name.lower()}({",".join(arg[0] for arg in next_args)})',
+            ops)
 
 
 key_idx = 0
@@ -171,7 +301,7 @@ if __name__ == '__main__':
         sys.exit(-1)
 
     root = process_nodes(pgv.AGraph(sys.argv[1]))
-    ms_str = to_miniscript(root, next_key_name)
+    ms_str, ms_ops = to_miniscript(root, next_key_name)
 
     basic_type = ''
     tset = root.attrs['type']
@@ -209,3 +339,4 @@ if __name__ == '__main__':
 
     print(f'type={basic_type} safe={hassig} nonmal={nonmal} '
           f'dissat={dissat} input={inp} output={outp} miniscript={ms_str}')
+    print('script:', ' '.join(flatten_op_list(ms_ops)))
