@@ -778,9 +778,10 @@ let as_set[sq] = select13[sq]
 // with 'Z' argument, but at the same time one-letter
 // types make the spec more readable, and closer to the
 // original specification in prose, which also uses
-// one-letter identifiers. This means that we any
+// one-letter identifiers. This means that any
 // one-letter identifier we use should be directly linked
-// to their spec meaning (no 'n: Node', only 'node: Node')
+// to their spec meaning (no 'n: Node', only 'node: Node'),
+// to avoid any potential clashes
 
 enum TypeDesignator { B, V, K, W, z, o, n, d, u, s, f, e }
 
