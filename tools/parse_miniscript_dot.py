@@ -44,17 +44,22 @@ class Node:
                 f'{self.attrs}, args={self.args})')
 
 
-def flatten_op_list(lst: List[Any]) -> Generator[Any, None, None]:
+def flatten(lst: Iterable[Any]) -> Generator[Any, None, None]:
     for item in lst:
         if isinstance(item, list):
-            for subitem in flatten_op_list(item):
+            for subitem in flatten(item):
                 yield subitem
         else:
-            if isinstance(item, str) and not item.isdigit() \
-                    and not item.startswith('<'):
-                yield f'OP_{item}'
-            else:
-                yield f'{item}'
+            yield item
+
+
+def flatten_op_list(lst: List[Any]) -> Generator[Any, None, None]:
+    for item in flatten(lst):
+        if isinstance(item, str) and not item.isdigit() \
+                and not item.startswith('<'):
+            yield f'OP_{item}'
+        else:
+            yield f'{item}'
 
 
 def from_label(gvnode: pgv.Node) -> Tuple[str, Set[str], Dict[str, AttrType]]:
@@ -172,16 +177,48 @@ def wrapper_to_script(node: Node, X: ScriptTree) -> ScriptTree:
     assert False, f'unknown wrapper {name}'
 
 
+def maybe_wit(node: Node, knames: Iterable[str] = ()) -> List[str]:
+    if 'this/IgnoredNode' in node.sets or \
+            'this/TransitivelyIgnoredNode' in node.sets:
+        return []
+
+    if 'wit' not in node.attrs:
+        return []
+
+    name_iter = iter(knames)
+    result = []
+    for wit in node.attrs['wit']:
+        if wit == 'ValidSig':
+            result.append(f'sig:{next(name_iter)}')
+        elif wit in ('DummyWitness', 'EmptySig'):
+            result.append('""')
+        elif wit == 'CorrectPreimage':
+            result.append(f'{node.name.lower()}:good')
+        elif wit == 'WrongPreimage':
+            result.append(f'{node.name.upper()}:bad')
+        elif wit == 'PubKey':
+            result.append(f'pub:{next(name_iter)}')
+        elif wit == 'WitOne':
+            result.append(f'1')
+        elif wit == 'WitZero':
+            result.append(f'0')
+        else:
+            assert False, f"unexpected witness {wit}"
+
+    return result
+
+
 def to_miniscript(node: Node, next_key_name: Callable[[], str]
-                  ) -> Tuple[str, ScriptTree]:
+                  ) -> Tuple[str, ScriptTree, List[str]]:
 
     name = node.name
 
     if name.endswith('Wrap'):
         sep = '' if node.args[0].name.endswith('Wrap') else ':'
-        ms, scr = to_miniscript(node.args[0], next_key_name)
+        ms, scr, wit = to_miniscript(node.args[0], next_key_name)
         return ((f'{name[:1].lower()}{sep}{ms}'),
-                wrapper_to_script(node, scr))
+                wrapper_to_script(node, scr),
+                maybe_wit(node) + wit)
 
     if name in ('After', 'Older'):
         if 'tl_height' in node.attrs['timelocks']:
@@ -194,27 +231,31 @@ def to_miniscript(node: Node, next_key_name: Callable[[], str]
         ltype = 'SEQUENCE' if name == 'Older' else 'LOCKTIME'
 
         return (f'{name.lower()}({arg_ms})',
-                [arg_scr, f'CHECK{ltype}VERIFY'])
+                [arg_scr, f'CHECK{ltype}VERIFY'],
+                [])
 
     if name in ('Sha256', 'Hash256', 'Ripemd160', 'Hash160'):
         return (f'{name.lower()}(H)',
-                ['SIZE', '<20>', 'EQUALVERIFY', name.upper(), '<H>', 'EQUAL'])
+                ['SIZE', '<20>', 'EQUALVERIFY', name.upper(), '<H>', 'EQUAL'],
+                maybe_wit(node))
 
     if name == 'Pk_k':
         kname = next_key_name()
         return (f'{name.lower()}({kname})',
-                [f'<{kname}>'])
+                [f'<{kname}>'],
+                maybe_wit(node, [kname]))
 
     if name == 'Pk_h':
         kname = next_key_name()
         return (f'{name.lower()}({kname})',
-                ['DUP', 'HASH160', f'<HASH160({kname})>', 'EQUALVERIFY'])
+                ['DUP', 'HASH160', f'<HASH160({kname})>', 'EQUALVERIFY'],
+                maybe_wit(node, [kname, kname]))
 
     if name == 'Zero':
-        return '0', [0]
+        return '0', [0], []
 
     if name == 'One':
-        return '1', [1]
+        return '1', [1], []
 
     ops: ScriptTree
 
@@ -228,12 +269,14 @@ def to_miniscript(node: Node, next_key_name: Callable[[], str]
         ops.extend([f'<{kn}>' for kn in knames])
         ops.append(num_args)
         ops.append('CHECKMULTISIG')
-        return (f'{name.lower()}({required},{",".join(knames)})', ops)
+        return (f'{name.lower()}({required},{",".join(knames)})', ops,
+                maybe_wit(node, knames))
 
     next_args = [to_miniscript(arg, next_key_name) for arg in node.args]
 
     next_ms = [arg[0] for arg in next_args]
     next_ops = [arg[1] for arg in next_args]
+    next_wit = list(flatten(arg[2] for arg in next_args))
 
     if name == 'Thresh':
         assert isinstance(node.attrs['num_args'], str)
@@ -250,7 +293,8 @@ def to_miniscript(node: Node, next_key_name: Callable[[], str]
         ops.append(required)
         ops.append('EQUAL')
 
-        return (f'{name.lower()}({required},{",".join(next_ms)})', ops)
+        return (f'{name.lower()}({required},{",".join(next_ms)})', ops,
+                next_wit)
 
     if name == 'Andor':
         X, Y, Z = next_ops
@@ -277,7 +321,7 @@ def to_miniscript(node: Node, next_key_name: Callable[[], str]
         assert False, f'unhandled miniscript fragment {name}'
 
     return (f'{name.lower()}({",".join(arg[0] for arg in next_args)})',
-            ops)
+            ops, maybe_wit(node) + next_wit)
 
 
 key_idx = 0
@@ -301,7 +345,7 @@ if __name__ == '__main__':
         sys.exit(-1)
 
     root = process_nodes(pgv.AGraph(sys.argv[1]))
-    ms_str, ms_ops = to_miniscript(root, next_key_name)
+    ms_str, ms_ops, wit = to_miniscript(root, next_key_name)
 
     basic_type = ''
     tset = root.attrs['type']
@@ -340,3 +384,4 @@ if __name__ == '__main__':
     print(f'type={basic_type} safe={hassig} nonmal={nonmal} '
           f'dissat={dissat} input={inp} output={outp} miniscript={ms_str}')
     print('script:', ' '.join(flatten_op_list(ms_ops)))
+    print('witness:', ' '.join(wit))
