@@ -176,7 +176,8 @@ sig Andor extends Node {
             }
         ]
 
-        xpect [ non_malleability_holds, e[X] and (s[X] or s[Y] or s[Z]) ]
+        xpect [ non_malleability_holds, non_malleable_args and
+                                        e[X] and (s[X] or s[Y] or s[Z]) ]
 
         xpect [
             sat, (sat[Y] and  sat[X]) or
@@ -301,7 +302,8 @@ sig Or_b extends Node {
             }
         ]
 
-        xpect [ non_malleability_holds, e[X] and e[Z] and (s[X] or s[Z]) ]
+        xpect [ non_malleability_holds, non_malleable_args and
+                                        e[X] and e[Z] and (s[X] or s[Z]) ]
 
         xpect [
             sat, (dsat[Z] and  sat[X]) or
@@ -340,7 +342,8 @@ sig Or_c extends Node {
             }
         ]
 
-        xpect [ non_malleability_holds, e[X] and (s[X] or s[Z]) ]
+        xpect [ non_malleability_holds, non_malleable_args and
+                                        e[X] and (s[X] or s[Z]) ]
 
         xpect [ sat, sat[X] or (sat[Z] and dsat[X]) ]
         never [ dsat ]
@@ -378,7 +381,8 @@ sig Or_d extends Node {
             }
         ]
 
-        xpect [ non_malleability_holds, e[X] and (s[X] or s[Z]) ]
+        xpect [ non_malleability_holds, non_malleable_args and
+                                        e[X] and (s[X] or s[Z]) ]
 
         xpect [ sat,  sat[X] or (sat[Z] and dsat[X]) ]
         xpect [ dsat, dsat[Z] and dsat[X] ]
@@ -419,7 +423,8 @@ sig Or_i extends Node {
             }
         ]
 
-        xpect [ non_malleability_holds, s[X] or s[Z] ]
+        xpect [ non_malleability_holds, non_malleable_args and
+                                        (s[X] or s[Z]) ]
 
         xpect [ sat,  wit[0] in WitZero =>  sat[Z] else  sat[X] ]
         xpect [ dsat, wit[0] in WitZero => dsat[Z] else dsat[X] ]
@@ -467,6 +472,7 @@ sig Thresh extends Node {
     xpect [
         non_malleability_holds,
         {
+            non_malleable_args
             all arg: args.elems | e[arg]
             #{ arg: args.elems | not s[arg] } <= required
         }
@@ -801,7 +807,9 @@ pred basic_types_and_modifiers_correctly_specified {
     no BasicType & NonmalleabilityTypeModifier
     no NonmalleabilityTypeModifier & CorrectnessTypeModifier
 
-    all node: Node | #btype[node] = 1 // single basic type always specified
+    all node: Node {
+        #btype[node] = 1 // single basic type always specified
+    }
 }
 
 // convenience predicates for type modifiers
@@ -858,9 +866,9 @@ sig NonMalleableHolds in Node {}
 
 pred correctness_holds [node: Node] { node in CorrectnessHolds }
 pred non_malleability_holds [node: Node] { node in NonMalleableHolds }
+pred non_malleable_args [node: Node] { node.args.elems in NonMalleableHolds }
 
 pred correctness_holds_for_all_nodes { Node = CorrectnessHolds }
-pred non_malleability_holds_for_all_nodes { Node = NonMalleableHolds }
 
 /********************/
 /* Analysis section */
@@ -914,7 +922,7 @@ pred main_search_predicate {
     reduced_search_space
 
     correctness_holds_for_all_nodes
-    non_malleability_holds_for_all_nodes
+    RootNode in NonMalleableHolds
 
     tl_conflict not in timelocks[RootNode]
 
@@ -941,7 +949,7 @@ pred sat_iff_dsat {
 pred sat_s_dsat_f_always_have_valid_sig {
     {
         correctness_holds_for_all_nodes
-        non_malleability_holds_for_all_nodes
+        RootNode in NonMalleableHolds
     }
     implies {
         all node: Sat  | s[node] => ValidSig in node.*(args.as_set).wit.elems
@@ -949,17 +957,47 @@ pred sat_s_dsat_f_always_have_valid_sig {
     }
 }
 
-// Note that "all conditional dissatisfactions (if any) to require a signature"
-// for the "e" type modifier is a hyperproperty, and we cannot model it easily,
-// while "requires a unique unconditional dissatisfaction to exist" can be
-// simply expressed as "e implies d"
-pred e_implies_d {
+
+pred no_type_conflicts_on_correcntess {
+    correctness_holds_for_all_nodes => {
+        all node: Node {
+            z + o not in node.type
+            n + z not in node.type
+            V + d not in node.type
+            V + u not in node.type
+        }
+    }
+}
+
+pred no_type_conflicts_on_non_malleability {
     {
         correctness_holds_for_all_nodes
-        non_malleability_holds_for_all_nodes
+        RootNode in NonMalleableHolds
     }
-    implies {
-        all node: Node | e[node] => d[node]
+    implies
+    {
+        all node: Node {
+            e + f not in node.type
+            V + e not in node.type
+            d + f not in node.type
+        }
+    }
+}
+
+pred implications_on_correcntess_hold {
+    correctness_holds_for_all_nodes => {
+        all node: Node | K in node.type implies u[node]
+    }
+}
+
+pred implications_on_non_malleability_hold {
+    correctness_holds_for_all_nodes => {
+        all node: Node {
+            e[node] implies d[node]
+            V in node.type implies f[node]
+            K in node.type implies s[node]
+            z[node] implies node in NonMalleableHolds
+        }
     }
 }
 
@@ -983,8 +1021,11 @@ check well_formed {
     NC_DSat in DSat // nc_dsat implies dsat
     sat_iff_dsat
     sat_s_dsat_f_always_have_valid_sig
-    e_implies_d
     z_o_n_modifiers_correctly_specified
+    no_type_conflicts_on_correcntess
+    implications_on_correcntess_hold
+    no_type_conflicts_on_non_malleability
+    implications_on_non_malleability_hold
 } for 5 but 8 Node, 8 Witness, 6 Int, 4 seq
 
 // An example what of what properties we can explore.
@@ -1028,7 +1069,7 @@ check or_b_timelock_conflict_example {
         // (and the s[RootNode] condition above enabled). So we will not enable
         // this condition for our exploration by default, as the 'ignorable'
         // condition below seems to also be enough for that
-        //non_malleability_holds_for_all_nodes
+        //RootNode in NonMalleableHolds
 
         // It seems that there can be no instances where timelocks cannot
         // be ignored with certain withess configuration.
