@@ -220,7 +220,7 @@ sig And_v extends Node {
             }
         ]
 
-        non_malleability_holds
+        xpect [ non_malleability_holds, non_malleable_args ]
 
         xpect [ sat,  sat[Y] and sat[X] ]
         xpect [ dsat, nc_dsat ]
@@ -263,7 +263,7 @@ sig And_b extends Node {
             }
         ]
 
-        non_malleability_holds
+        xpect [ non_malleability_holds, non_malleable_args ]
 
         xpect [ sat,    sat[Y] and  sat[X] ]
         xpect [ dsat, (dsat[Y] and dsat[X]) or nc_dsat ]
