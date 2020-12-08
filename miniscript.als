@@ -530,7 +530,7 @@ abstract sig Wrapper extends Node {
 } {
     #args = 1
 
-    non_malleability_holds
+    xpect [ non_malleability_holds, non_malleable_args ]
 
     timelocks = @timelocks[args[0]]
 }
