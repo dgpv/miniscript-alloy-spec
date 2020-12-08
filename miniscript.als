@@ -1016,16 +1016,20 @@ pred z_o_n_modifiers_correctly_specified {
 }
 
 check well_formed {
+
     basic_types_and_modifiers_correctly_specified
     NC_Sat in Sat // nc_sat implies sat
     NC_DSat in DSat // nc_dsat implies dsat
     sat_iff_dsat
     sat_s_dsat_f_always_have_valid_sig
     z_o_n_modifiers_correctly_specified
+
+    RootNode in NonMalleableHolds => Node in NonMalleableHolds
     no_type_conflicts_on_correcntess
     implications_on_correcntess_hold
     no_type_conflicts_on_non_malleability
     implications_on_non_malleability_hold
+
 } for 5 but 8 Node, 8 Witness, 6 Int, 4 seq
 
 // An example what of what properties we can explore.
