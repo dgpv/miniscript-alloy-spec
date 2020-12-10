@@ -354,11 +354,6 @@ if __name__ == '__main__':
             assert not basic_type
             basic_type = t
 
-    if 'this/NonMalleableHolds' in root.sets:
-        nonmal = 'yes'
-    else:
-        nonmal = 'no'
-
     hassig = 'yes' if 's' in tset else 'no'
 
     if 'f' in tset:
@@ -369,6 +364,12 @@ if __name__ == '__main__':
         dissat = 'yes'
     else:
         dissat = 'unknown'
+
+    if 'this/NonMalleableHolds' in root.sets:
+        nonmal = 'yes'
+    else:
+        nonmal = 'no'
+        dissat = 'irrelevant'
 
     if 'z' in tset:
         inp = '0'
