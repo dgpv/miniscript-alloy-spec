@@ -1015,7 +1015,7 @@ pred z_o_n_modifiers_correctly_specified {
     }
 }
 
-check well_formed {
+pred well_formed {
 
     basic_types_and_modifiers_correctly_specified
     NC_Sat in Sat // nc_sat implies sat
@@ -1030,6 +1030,10 @@ check well_formed {
     no_type_conflicts_on_non_malleability
     implications_on_non_malleability_hold
 
+}
+
+check well_formed {
+    well_formed
 } for 5 but 8 Node, 8 Witness, 6 Int, 4 seq
 
 // An example what of what properties we can explore.
