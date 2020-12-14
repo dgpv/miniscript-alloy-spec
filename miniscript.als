@@ -503,6 +503,7 @@ sig Multi extends Node {
 
     no args
 
+    correctness_holds
     non_malleability_holds
 
     #wit = required.plus[1]
