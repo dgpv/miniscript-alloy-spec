@@ -91,7 +91,8 @@ def from_label(gvnode: pgv.Node) -> Tuple[str, Set[str], Dict[str, AttrType]]:
     return node_name, node_sets, attrs
 
 
-def process_nodes(g: pgv.AGraph) -> Node:
+def process_nodes(g: pgv.AGraph) -> Tuple[Node, bool]:
+
     nodes = {str(gvnode): from_label(gvnode) for gvnode in g.nodes()}
     root_node = None
     for gvn, ndata in nodes.items():
@@ -102,19 +103,27 @@ def process_nodes(g: pgv.AGraph) -> Node:
         print("Error: cannot find root node\n")
         sys.exit(-1)
 
-    def walk(rn: pgv.Node) -> Node:
+    def walk(rn: pgv.Node) -> Tuple[Node, bool]:
         args_dict = {}
+        correctness_holds = True
+
         for n in g.successors(rn):
             e = pgv.Edge(g, rn, n)
             m = re.match('^args\\s+\\[(\\d+)\\]$', e.attr['label'])
             assert m
             arg_idx = int(m.group(1))
             assert arg_idx not in args_dict
-            args_dict[arg_idx] = walk(n)
+            args_dict[arg_idx], have_correctness = walk(n)
+            if not have_correctness:
+                correctness_holds = False
 
         args = [args_dict[idx] for idx in range(len(args_dict))]
 
-        return Node(*nodes[rn], args=args)
+        new_node = Node(*nodes[rn], args=args)
+        if correctness_holds:
+            correctness_holds = 'this/CorrectnessHolds' in new_node.sets
+
+        return new_node, correctness_holds
 
     return walk(root_node)
 
@@ -344,7 +353,7 @@ if __name__ == '__main__':
         print('please provide .dot file\n')
         sys.exit(-1)
 
-    root = process_nodes(pgv.AGraph(sys.argv[1]))
+    root, correctness_holds = process_nodes(pgv.AGraph(sys.argv[1]))
     ms_str, ms_ops, wit = to_miniscript(root, next_key_name)
 
     basic_type = ''
@@ -354,33 +363,43 @@ if __name__ == '__main__':
             assert not basic_type
             basic_type = t
 
-    hassig = 'yes' if 's' in tset else 'no'
+    if correctness_holds:
+        hassig = 'yes' if 's' in tset else 'no'
 
-    if 'f' in tset:
-        dissat = 'no'
-    elif 'e' in tset:
-        dissat = 'unique'
-    elif 'd' in tset:
-        dissat = 'yes'
-    else:
-        dissat = 'unknown'
+        if 'f' in tset:
+            dissat = 'no'
+        elif 'e' in tset:
+            dissat = 'unique'
+        elif 'd' in tset:
+            dissat = 'yes'
+        else:
+            dissat = 'unknown'
 
-    if 'this/NonMalleableHolds' in root.sets:
-        nonmal = 'yes'
-    else:
+        if 'this/NonMalleableHolds' in root.sets:
+            nonmal = 'yes'
+        else:
+            nonmal = 'no'
+            dissat = 'irrelevant'
+
+        if 'z' in tset:
+            inp = '0'
+        elif 'o' in tset:
+            inp = '1n' if 'n' in tset else '1'
+        elif 'n' in tset:
+            inp = 'n'
+        else:
+            inp = '-'
+
+        outp = '1' if 'u' in tset else 'nonzero'
+
+    else:  # not correctness_holds
+
         nonmal = 'no'
+        hassig = 'no'
         dissat = 'irrelevant'
-
-    if 'z' in tset:
-        inp = '0'
-    elif 'o' in tset:
-        inp = '1n' if 'n' in tset else '1'
-    elif 'n' in tset:
-        inp = 'n'
-    else:
+        basic_type = '(invalid)'
         inp = '-'
-
-    outp = '1' if 'u' in tset else 'nonzero'
+        outp = 'nonzero'
 
     print(f'type={basic_type} safe={hassig} nonmal={nonmal} '
           f'dissat={dissat} input={inp} output={outp} miniscript={ms_str}')
